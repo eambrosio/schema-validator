@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+    <jmxConfigurator />
+
+    <property name="PATTERN" value="[%date{ISO8601}][%-5level][%logger{36}][%X{akkaSource}] %msg%n"/>
+
+    <property name="LOG_PATH" value="${LOG_PATH:-log}" />
+    <property name="LOG_NAME" value="server" />
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="${LOGBACK_ROOT_LEVEL:-info}">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

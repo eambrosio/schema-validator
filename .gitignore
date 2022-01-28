@@ -1,0 +1,10 @@
+### Scala ###
+*.class
+*.log
+
+/target
+/.idea/
+/.bsp/
+/project/target/
+/project/project/target/
+/blackbox.amd64
