@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:10-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=validator
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  schema-validator:
+    build:
+      dockerfile: dockerfiles/server/Dockerfile
+      context: ../
+    environment:
+      - WINDOW_DURATION=10
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres

@@ -1,3 +1,5 @@
+import sbt._
+
 name := "schema-validator"
 
 version := "0.1"

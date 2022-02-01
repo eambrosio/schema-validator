@@ -13,7 +13,7 @@
         </encoder>
     </appender>
 
-    <root level="${LOGBACK_ROOT_LEVEL:-debug}">
+    <root level="${LOGBACK_ROOT_LEVEL:-info}">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>
