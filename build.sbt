@@ -4,9 +4,11 @@ version := "0.1"
 
 scalaVersion := "2.13.8"
 
-val AkkaVersion     = "2.6.18"
-val AkkaHTTPVersion = "10.2.6"
-val circeVersion    = "0.14.1"
+val AkkaVersion      = "2.6.18"
+val AkkaHTTPVersion  = "10.2.6"
+val circeVersion     = "0.14.1"
+val slickVersion     = "3.3.3"
+val slickCatsVersion = "0.10.4"
 
 val deps = Seq(
   "com.github.java-json-tools"  % "json-schema-validator" % "2.2.14",
@@ -17,15 +19,19 @@ val deps = Seq(
   "com.typesafe.akka"          %% "akka-actor"            % AkkaVersion,
   "com.typesafe.akka"          %% "akka-stream"           % AkkaVersion,
   "com.typesafe.akka"          %% "akka-http"             % AkkaHTTPVersion,
+  "com.typesafe.slick"         %% "slick"                 % slickVersion,
+  "com.rms.miu"                %% "slick-cats"            % slickCatsVersion,
+  "com.typesafe.slick"         %% "slick-hikaricp"        % slickVersion,
   "com.typesafe.akka"          %% "akka-http-testkit"     % "10.2.6"   % Test,
   "org.scalatest"              %% "scalatest"             % "3.2.9"    % Test,
   "org.scalatestplus"          %% "mockito-3-4"           % "3.2.10.0" % Test
 )
 
 lazy val circe = Seq(
-  "io.circe" %% "circe-core"    % circeVersion,
-  "io.circe" %% "circe-generic" % circeVersion,
-  "io.circe" %% "circe-parser"  % circeVersion
+  "io.circe" %% "circe-core"       % circeVersion,
+  "io.circe" %% "circe-generic"    % circeVersion,
+  "io.circe" %% "circe-jackson210" % "0.14.0",
+  "io.circe" %% "circe-parser"     % circeVersion
 )
 
 libraryDependencies ++= deps ++ circe

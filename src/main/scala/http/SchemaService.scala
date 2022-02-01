@@ -1,78 +1,73 @@
 package http
 
-import cats.data.EitherT
-import cats.syntax.either._
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import com.github.fge.jsonschema.core.report.ProcessingReport
-import com.github.fge.jsonschema.main.{JsonSchema, JsonSchemaFactory}
+import com.typesafe.scalalogging.LazyLogging
 import model.ActionEnum.VALIDATE_DOCUMENT
-import model.{JsonReaderError, JsonSchemaReaderError, SchemaError, SchemaValidatorResponse, ValidateJsonError}
+import model.{
+  ActionEnum,
+  DuplicatedKeyError,
+  JsonReaderError,
+  JsonSchemaReaderError,
+  SchemaNotFoundError,
+  SchemaValidatorError,
+  SchemaValidatorResponse,
+  StatusEnum,
+  UnexpectedError,
+  ValidateJsonError
+}
 import model.StatusEnum.{ERROR, SUCCESS}
+import slick.jdbc.JdbcBackend.DatabaseDef
+import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 trait SchemaService[F[_]] {
 
-  def upload(schema: String, schemaId: String): F[Either[String, SchemaValidatorResponse]]
+  def upload(schema: String, schemaId: String): F[Either[SchemaValidatorError, SchemaValidatorResponse]]
 
-  def download(schemaId: String): F[Either[String, SchemaValidatorResponse]]
+  def download(schemaId: String): F[Either[SchemaValidatorError, SchemaValidatorResponse]]
 
-  def validate(document: String, schemaId: String): F[Either[SchemaError, SchemaValidatorResponse]]
 }
 
-case class SchemaServiceImpl()(implicit ec: ExecutionContext) extends SchemaService[Future] {
+case class SchemaServiceImpl()(implicit db: DatabaseDef, ec: ExecutionContext)
+    extends SchemaService[Future]
+    with LazyLogging {
 
-  val jsonSchemaFactory: JsonSchemaFactory = JsonSchemaFactory.byDefault()
-  val jsonMapper: ObjectMapper             = new ObjectMapper()
+  override def upload(
+      schema: String,
+      schemaId: String
+  ): Future[Either[SchemaValidatorError, SchemaValidatorResponse]] = {
+    val insertQuery = sqlu"INSERT INTO schemas(id,schema) VALUES($schemaId,$schema)"
+    val selectQuery = sql"SELECT id FROM schemas WHERE id=$schemaId".as[String]
 
-  override def upload(schema: String, schemaId: String): Future[Either[String, SchemaValidatorResponse]] = ???
+    val process = selectQuery
+      .flatMap(result =>
+        if (result.isEmpty) {
+          insertQuery.map(_ => Right(SchemaValidatorResponse(ActionEnum.UPLOAD, schemaId, StatusEnum.SUCCESS)))
+        } else DBIO.successful(Left(DuplicatedKeyError(schemaId)))
+      )
 
-  override def download(schemaId: String): Future[Either[String, SchemaValidatorResponse]] = ???
-
-  override def validate(document: String, schemaId: String): Future[Either[SchemaError, SchemaValidatorResponse]] = {
-    val response = for {
-      schema         <- EitherT(getSchema(schemaId))
-      schemaJsonNode <- EitherT(readJson(schema))
-      documentAsJson <- EitherT(readJson(document))
-      jsonSchema     <- EitherT(readJsonSchema(schemaJsonNode))
-      result         <- EitherT(validateJson(documentAsJson, jsonSchema))
-    } yield {
-
-      if (result.isSuccess)
-        SchemaValidatorResponse(VALIDATE_DOCUMENT, schemaId, SUCCESS)
-      else
-        SchemaValidatorResponse(VALIDATE_DOCUMENT, schemaId, ERROR, result)
-    }
-
-    response.value
-
+    db.run(process.transactionally)
   }
 
-  private def validateJson(
-      documentAsJson: JsonNode,
-      jsonSchema: JsonSchema
-  ): Future[Either[SchemaError, ProcessingReport]] =
-    Future.successful(Try(jsonSchema.validate(documentAsJson))
-      .toEither
-      .leftMap(e => ValidateJsonError(e.getMessage)))
+  override def download(schemaId: String): Future[Either[SchemaValidatorError, SchemaValidatorResponse]] = {
+    val selectQuery = sql"SELECT schema FROM schemas WHERE id=$schemaId".as[String]
 
-  private def readJsonSchema(schemaJsonNode: JsonNode): Future[Either[SchemaError, JsonSchema]] =
-    Future.successful(Try(jsonSchemaFactory.getJsonSchema(schemaJsonNode))
-      .toEither
-      .leftMap(e => JsonSchemaReaderError(e.getMessage)))
+    val result = selectQuery.asTry.map {
+      case Success(value) if value.isEmpty =>
+        Left(SchemaNotFoundError(schemaId))
 
-  private def readJson(schema: String): Future[Either[SchemaError, JsonNode]] =
-    Future.successful(Try(jsonMapper.readTree(schema))
-      .toEither
-      .leftMap {
-        e: Throwable => JsonReaderError(e.getMessage)
-      })
+      case Success(value) if value.nonEmpty =>
+        Right(SchemaValidatorResponse(ActionEnum.DOWNLOAD, schemaId, StatusEnum.SUCCESS, document = value.headOption))
 
-  private def getSchema(schemaId: String): Future[Either[SchemaError, String]] =
-    Future.successful(Right(
-      """{"$schema":"http://json-schema.org/draft-04/schema#","title":"/etc/fstab","description":"JSON representation of /etc/fstab","type":"object","properties":{"swap":{"$ref":"#/definitions/mntent"}},"patternProperties":{"^/([^/]+(/[^/]+)*)?$":{"$ref":"#/definitions/mntent"}},"required":["/","swap"],"additionalProperties":false,"definitions":{"mntent":{"title":"mntent","description":"An fstab entry","type":"object","properties":{"device":{"type":"string"},"fstype":{"type":"string"},"options":{"type":"array","minItems":1,"items":{"type":"string"}},"dump":{"type":"integer","minimum":0},"fsck":{"type":"integer","minimum":0}},"required":["device","fstype"],"additionalItems":false}}}"""
-    ))
+      case Failure(exception) =>
+        logger.error(s"unexpected error while retrieving schema: ${exception.getMessage}")
+        Left(UnexpectedError(exception.getMessage))
+    }
 
-  //good document
+    db.run(result)
+  }
+
 }

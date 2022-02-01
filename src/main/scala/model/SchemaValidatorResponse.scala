@@ -4,7 +4,13 @@ import com.github.fge.jsonschema.core.report.ProcessingReport
 
 import scala.jdk.CollectionConverters._
 
-case class SchemaValidatorResponse(action: String, id: String, status: String, message: Option[String] = None)
+case class SchemaValidatorResponse(
+    action: String,
+    id: String,
+    status: String,
+    message: Option[String] = None,
+    document: Option[String] = None
+)
 
 object SchemaValidatorResponse {
 

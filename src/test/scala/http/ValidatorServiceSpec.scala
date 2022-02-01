@@ -1,5 +1,6 @@
 package http
 
+import io.circe.syntax.EncoderOps
 import model.ActionEnum.VALIDATE_DOCUMENT
 import model.SchemaValidatorResponse
 import model.StatusEnum.{ERROR, SUCCESS}
@@ -11,7 +12,10 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-class SchemaServiceSpec extends AnyFlatSpec with Matchers with EitherValues {
+class ValidatorServiceSpec extends AnyFlatSpec with Matchers with EitherValues {
+
+  val schema =
+    """{"$schema":"http://json-schema.org/draft-04/schema#","title":"/etc/fstab","description":"JSON representation of /etc/fstab","type":"object","properties":{"swap":{"$ref":"#/definitions/mntent"}},"patternProperties":{"^/([^/]+(/[^/]+)*)?$":{"$ref":"#/definitions/mntent"}},"required":["/","swap"],"additionalProperties":false,"definitions":{"mntent":{"title":"mntent","description":"An fstab entry","type":"object","properties":{"device":{"type":"string"},"fstype":{"type":"string"},"options":{"type":"array","minItems":1,"items":{"type":"string"}},"dump":{"type":"integer","minimum":0},"fsck":{"type":"integer","minimum":0}},"required":["device","fstype"],"additionalItems":false}}}"""
 
   val goodDocument =
     """{"/":{"device":"/dev/sda1","fstype":"btrfs","options":["ssd"]},"swap":{"device":"/dev/sda2","fstype":"swap"},"/tmp":{"device":"tmpfs","fstype":"tmpfs","options":["size=64M"]},"/var/lib/mysql":{"device":"/dev/data/mysql","fstype":"btrfs"}}"""
@@ -21,17 +25,18 @@ class SchemaServiceSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   it should "return a successful response" in {
 
-    val service = SchemaServiceImpl()
-    Await.result(service.validate(goodDocument, "1"), Duration.Inf).value shouldBe SchemaValidatorResponse(
+    val service = ValidatorServiceImpl()
+    Await.result(service.validate(goodDocument, "1", schema), Duration.Inf).value shouldBe SchemaValidatorResponse(
       VALIDATE_DOCUMENT,
       "1",
       SUCCESS
     )
   }
+
   it should "return a response with status error" in {
 
-    val service = SchemaServiceImpl()
-    Await.result(service.validate(badDocument, "1"), Duration.Inf).value shouldBe SchemaValidatorResponse(
+    val service = ValidatorServiceImpl()
+    Await.result(service.validate(badDocument, "1", schema), Duration.Inf).value shouldBe SchemaValidatorResponse(
       VALIDATE_DOCUMENT,
       "1",
       ERROR,
