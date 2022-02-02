@@ -41,7 +41,7 @@ case class ValidatorServiceImpl()(implicit ec: ExecutionContext) extends Validat
     } yield {
 
       if (result.isSuccess)
-        SchemaValidatorResponse(VALIDATE_DOCUMENT, schemaId, SUCCESS)
+        SchemaValidatorResponse(VALIDATE_DOCUMENT, Some(schemaId), SUCCESS)
       else
         SchemaValidatorResponse(VALIDATE_DOCUMENT, schemaId, ERROR, result)
     }

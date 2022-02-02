@@ -28,7 +28,7 @@ class ValidatorServiceSpec extends AnyFlatSpec with Matchers with EitherValues {
     val service = ValidatorServiceImpl()
     Await.result(service.validate(goodDocument, "1", schema), Duration.Inf).value shouldBe SchemaValidatorResponse(
       VALIDATE_DOCUMENT,
-      "1",
+      Some("1"),
       SUCCESS
     )
   }
@@ -38,7 +38,7 @@ class ValidatorServiceSpec extends AnyFlatSpec with Matchers with EitherValues {
     val service = ValidatorServiceImpl()
     Await.result(service.validate(badDocument, "1", schema), Duration.Inf).value shouldBe SchemaValidatorResponse(
       VALIDATE_DOCUMENT,
-      "1",
+      Some("1"),
       ERROR,
       Some("object has missing required properties ([\"/\"])")
     )

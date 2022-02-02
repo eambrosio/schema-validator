@@ -6,10 +6,10 @@ import scala.jdk.CollectionConverters._
 
 case class SchemaValidatorResponse(
     action: String,
-    id: String,
+    id: Option[String],
     status: String,
     message: Option[String] = None,
-    document: Option[String] = None
+    data: Option[String] = None
 )
 
 object SchemaValidatorResponse {
@@ -18,7 +18,7 @@ object SchemaValidatorResponse {
 
     val message = result.iterator.asScala.toList.map(_.getMessage).head
 
-    SchemaValidatorResponse(action, id, status, Some(message))
+    SchemaValidatorResponse(action, Some(id), status, Some(message))
   }
 
 }

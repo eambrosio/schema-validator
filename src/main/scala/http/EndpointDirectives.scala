@@ -1,6 +1,5 @@
 package http
 
-import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import com.typesafe.scalalogging.LazyLogging
@@ -8,7 +7,9 @@ import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.generic.AutoDerivation
 import io.circe.generic.auto._
 import io.circe.syntax.EncoderOps
-import model.{ActionEnum, DuplicatedKeyError, SchemaValidatorError, SchemaValidatorResponse, StatusEnum}
+import model.ActionEnum.{DOWNLOAD, UPLOAD}
+import model.StatusEnum.ERROR
+import model.{DuplicatedKeyError, SchemaNotFoundError, SchemaValidatorError, SchemaValidatorResponse}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -27,17 +28,17 @@ trait EndpointDirectives extends LazyLogging with FailFastCirceSupport with Auto
     }
 
   private def responseFromError(error: SchemaValidatorError): Route = error match {
-    case e @ DuplicatedKeyError(id) =>
+    case e @ DuplicatedKeyError(id)  =>
       complete(
         StatusCodes.BadRequest,
-        SchemaValidatorResponse(
-          ActionEnum.UPLOAD,
-          id,
-          StatusEnum.ERROR,
-          message = Some(e.msg)
-        ).asJson.deepDropNullValues
+        SchemaValidatorResponse(UPLOAD, Some(id), ERROR, message = Some(e.msg)).asJson.deepDropNullValues
       )
-    case _                          => complete(StatusCodes.BadRequest, error)
+    case e @ SchemaNotFoundError(id) =>
+      complete(
+        StatusCodes.BadRequest,
+        SchemaValidatorResponse(DOWNLOAD, Some(id), ERROR, message = Some(e.msg)).asJson.deepDropNullValues
+      )
+    case _                           => complete(StatusCodes.BadRequest, error.msg)
 
   }
 

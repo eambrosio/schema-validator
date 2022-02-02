@@ -13,7 +13,7 @@ case class SchemaValidatorEndpoint(schemaService: SchemaService[Future], validat
     implicit ec: ExecutionContext
 ) extends EndpointDirectives {
 
-  val routes: Route = validateSchema ~ downloadSchema ~ uploadSchema
+  val routes: Route = validateSchema ~ downloadSchema ~ uploadSchema ~ listSchemas
 
   def downloadSchema: Route =
     path("schema" / Segment) { schemaId =>
@@ -39,9 +39,16 @@ case class SchemaValidatorEndpoint(schemaService: SchemaService[Future], validat
 //          responseFromFuture(schemaService.validate(document.asJson.toString(), schemaId))
           responseFromFuture((for {
             schema   <- EitherT(schemaService.download(schemaId))
-            response <- EitherT(validatorService.validate(document.asJson.toString(), schemaId, schema.document.get))
+            response <- EitherT(validatorService.validate(document.asJson.toString(), schemaId, schema.data.get))
           } yield response).value)
         }
+      }
+    }
+
+  def listSchemas: Route =
+    path("schema") {
+      get {
+        responseFromFuture(schemaService.list)
       }
     }
 
