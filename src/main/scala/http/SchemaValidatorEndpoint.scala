@@ -1,13 +1,11 @@
 package http
 
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.unmarshalling.Unmarshal
 import cats.data.EitherT
 import io.circe.JsonObject
-import io.circe.parser.decode
+import io.circe.syntax._
 
 import scala.concurrent.{ExecutionContext, Future}
-import io.circe.syntax._
 
 case class SchemaValidatorEndpoint(schemaService: SchemaService[Future], validatorService: ValidatorService[Future])(
     implicit ec: ExecutionContext
@@ -36,10 +34,13 @@ case class SchemaValidatorEndpoint(schemaService: SchemaService[Future], validat
       post {
 
         entity(as[JsonObject]) { document =>
-//          responseFromFuture(schemaService.validate(document.asJson.toString(), schemaId))
           responseFromFuture((for {
             schema   <- EitherT(schemaService.download(schemaId))
-            response <- EitherT(validatorService.validate(document.asJson.toString(), schemaId, schema.data.get))
+            response <- EitherT(validatorService.validate(
+                          document.asJson.deepDropNullValues.toString(),
+                          schemaId,
+                          schema.data.get
+                        ))
           } yield response).value)
         }
       }
