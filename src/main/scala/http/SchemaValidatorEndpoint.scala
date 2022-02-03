@@ -27,7 +27,7 @@ case class SchemaValidatorEndpoint(schemaService: SchemaService[Future], validat
     path("schema" / Segment) { schemaId =>
       post {
         entity(as[JsonObject]) { schema =>
-          responseFromFuture(schemaService.upload(schema.asJson.toString(), schemaId))
+          responseFromFuture(schemaService.upload(schema.asJson.noSpaces, schemaId))
         }
       }
     }
