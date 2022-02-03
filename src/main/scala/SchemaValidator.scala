@@ -1,7 +1,8 @@
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.server.Directives.handleRejections
 import com.typesafe.scalalogging.LazyLogging
-import http.{SchemaServiceImpl, SchemaValidatorEndpoint, ValidatorServiceImpl}
+import http.{EndpointDirectives, SchemaServiceImpl, SchemaValidatorEndpoint, ValidatorServiceImpl}
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 
@@ -16,7 +17,11 @@ object SchemaValidator extends App with LazyLogging {
   val validatorService: ValidatorServiceImpl  = ValidatorServiceImpl()
   val endpoint: SchemaValidatorEndpoint       = SchemaValidatorEndpoint(schemaService, validatorService)
 
-  val futureBinding = Http().newServerAt("0.0.0.0", 8080).bind(endpoint.routes)
+  val routes = handleRejections(EndpointDirectives.contentMalFormedHandler) {
+    endpoint.routes
+  }
+
+  val futureBinding = Http().newServerAt("0.0.0.0", 8080).bind(routes)
 
   futureBinding.onComplete {
     case Success(binding) =>

@@ -1,7 +1,8 @@
 package http
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.{Directives, Route}
+import akka.http.scaladsl.server.Directives.complete
+import akka.http.scaladsl.server.{Directives, MalformedRequestContentRejection, RejectionHandler, Route}
 import com.typesafe.scalalogging.LazyLogging
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.generic.AutoDerivation
@@ -9,7 +10,7 @@ import io.circe.generic.auto._
 import io.circe.syntax.EncoderOps
 import model.ActionEnum.{DOWNLOAD, UPLOAD}
 import model.StatusEnum.ERROR
-import model.{DuplicatedKeyError, SchemaNotFoundError, SchemaValidatorError, SchemaValidatorResponse}
+import model._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -43,5 +44,24 @@ trait EndpointDirectives extends LazyLogging with FailFastCirceSupport with Auto
     case _ => complete(StatusCodes.InternalServerError, error.msg)
 
   }
+
+}
+
+object EndpointDirectives extends FailFastCirceSupport {
+
+  def contentMalFormedHandler: RejectionHandler =
+    RejectionHandler
+      .newBuilder()
+      .handleAll[MalformedRequestContentRejection] { rejections =>
+        complete(
+          StatusCodes.BadRequest,
+          SchemaValidatorResponse(
+            ActionEnum.VALIDATE_DOCUMENT,
+            None,
+            StatusEnum.ERROR,
+            message = Some("Invalid JSON")
+          ).asJson.deepDropNullValues
+        )
+      }.result()
 
 }
