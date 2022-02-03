@@ -11,5 +11,5 @@ case class ValidateJsonError(override val msg: String)
     extends SchemaValidatorError(s"Error while validating a Json: $msg")
 
 case class UnexpectedError(override val msg: String) extends SchemaValidatorError(s"Unexpected error happened: $msg")
-case class SchemaNotFoundError(id: String)           extends SchemaValidatorError(s"Schema with id $id not found")
-case class DuplicatedKeyError(id: String)            extends SchemaValidatorError(s"Schema with id $id already exists")
+case class SchemaNotFoundError(id: String)           extends SchemaValidatorError(s"Schema with id '$id' not found")
+case class DuplicatedKeyError(id: String)            extends SchemaValidatorError(s"Schema with id '$id' already exists")

@@ -28,17 +28,19 @@ trait EndpointDirectives extends LazyLogging with FailFastCirceSupport with Auto
     }
 
   private def responseFromError(error: SchemaValidatorError): Route = error match {
-    case e @ DuplicatedKeyError(id)  =>
+    case e @ DuplicatedKeyError(id) =>
       complete(
         StatusCodes.BadRequest,
         SchemaValidatorResponse(UPLOAD, Some(id), ERROR, message = Some(e.msg)).asJson.deepDropNullValues
       )
+
     case e @ SchemaNotFoundError(id) =>
       complete(
         StatusCodes.BadRequest,
         SchemaValidatorResponse(DOWNLOAD, Some(id), ERROR, message = Some(e.msg)).asJson.deepDropNullValues
       )
-    case _                           => complete(StatusCodes.BadRequest, error.msg)
+
+    case _ => complete(StatusCodes.InternalServerError, error.msg)
 
   }
 

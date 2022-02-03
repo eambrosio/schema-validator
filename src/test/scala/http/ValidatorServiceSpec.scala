@@ -1,6 +1,5 @@
 package http
 
-import io.circe.syntax.EncoderOps
 import model.ActionEnum.VALIDATE_DOCUMENT
 import model.SchemaValidatorResponse
 import model.StatusEnum.{ERROR, SUCCESS}

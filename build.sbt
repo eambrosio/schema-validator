@@ -24,9 +24,11 @@ val deps = Seq(
   "com.typesafe.slick"         %% "slick"                 % slickVersion,
   "com.rms.miu"                %% "slick-cats"            % slickCatsVersion,
   "com.typesafe.slick"         %% "slick-hikaricp"        % slickVersion,
-  "com.typesafe.akka"          %% "akka-http-testkit"     % "10.2.6"   % Test,
-  "org.scalatest"              %% "scalatest"             % "3.2.9"    % Test,
-  "org.scalatestplus"          %% "mockito-3-4"           % "3.2.10.0" % Test
+  "com.typesafe.akka"          %% "akka-http-testkit"     % AkkaHTTPVersion % Test,
+  "com.typesafe.akka"          %% "akka-stream-testkit"   % AkkaVersion     % Test,
+  "com.typesafe.akka"          %% "akka-testkit"          % AkkaVersion     % Test,
+  "org.scalatest"              %% "scalatest"             % "3.2.9"         % Test,
+  "org.scalatestplus"          %% "mockito-3-4"           % "3.2.10.0"      % Test
 )
 
 lazy val circe = Seq(
